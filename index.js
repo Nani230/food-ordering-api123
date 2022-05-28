@@ -19,6 +19,9 @@ app.use("/user", userrouter);
 app.use("/restaurantuser", restaurantrouter);
 app.use("/cart", cartrouter);
 app.use("/order", orderrouter);
+
+app.get('/', (req, res ) => {res.send({message: "its working fine!!!"})})
+
 // { useNewUrlParser: true, useUnifiedTopology: true }
 
 mongoose
