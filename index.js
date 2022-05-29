@@ -22,8 +22,6 @@ app.use("/order", orderrouter);
 
 app.get('/', (req, res ) => {res.send({message: "its working fine!!!"})})
 
-// { useNewUrlParser: true, useUnifiedTopology: true }
-
 mongoose
     .connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
     .then(() => console.log("mongodb connected"))
