@@ -23,9 +23,7 @@ rout.post('/register', (req, res) => {
                 '.' +
                 files.image.originalFilename.split('.')[1];
 
-            let newpath = './restarentimages/images/' + newImageName;
-
-            console.log(newpath);
+            let newpath = './images/restaurant/' + newImageName;
 
             fs.readFile(oldpath, (err, data) => {
                 if (err === null) {
@@ -107,7 +105,7 @@ rout.post('/register', (req, res) => {
 
 // geting restaurant poster image
 rout.get('/resImage/:filename', (req, res) => {
-    res.download(`./restarentimages/images/${req.params.filename}`);
+    res.download(`./images/restaurant/${req.params.filename}`);
 });
 
 //
