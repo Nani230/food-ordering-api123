@@ -23,10 +23,14 @@ rout.post('/register', (req, res) => {
                 '.' +
                 files.image.originalFilename.split('.')[1];
 
-            let newpath = __dirname + '/restarentimages/images/' + newImageName;
+            let newpath = './restarentimages/images/' + newImageName;
+
+            console.log(newpath);
 
             fs.readFile(oldpath, (err, data) => {
                 if (err === null) {
+                    console.log('Hello');
+
                     fs.writeFile(newpath, data, (err) => {
                         if (err === null) {
                             console.log('File stored');
@@ -220,7 +224,7 @@ rout.put('/items/:id', verifytoken, restaurant, (req, res) => {
                     '.' +
                     files.image.originalFilename.split('.')[1];
 
-                let newpath = __dirname + '/images/food/' + newImageName;
+                let newpath = './images/food/' + newImageName;
                 console.log(newpath);
 
                 fs.readFile(oldpath, (err, data) => {
@@ -355,7 +359,7 @@ rout.post('/createItem', verifytoken, restaurant, (req, res) => {
                 '.' +
                 files.image.originalFilename.split('.')[1];
 
-            let newpath = __dirname + '/images/food/' + newImageName;
+            let newpath = './images/food/' + newImageName;
             console.log(newpath);
 
             fs.readFile(oldpath, (err, data) => {
