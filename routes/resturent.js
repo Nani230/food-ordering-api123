@@ -1,84 +1,114 @@
-const express = require("express");
-const bcrypt = require("bcryptjs");
-const usermodal = require("../modals/restaurantmodal");
-const itemmodal = require("../modals/fooditems");
-const verifytoken = require("../middlewear/restarentverify");
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const usermodal = require('../modals/restaurantmodal');
+const itemmodal = require('../modals/fooditems');
+const verifytoken = require('../middlewear/restarentverify');
 const rout = express.Router();
-const jwt = require("jsonwebtoken");
-const formidable = require("formidable");
-const fs = require("fs");
-const restaurant = require("../middlewear/Restarurent");
+const jwt = require('jsonwebtoken');
+const formidable = require('formidable');
+const fs = require('fs');
+const restaurant = require('../middlewear/Restarurent');
 
-// restarent register
-rout.post("/register", (req, res) => {
+// restarent
+// TODO: fileuplod
+rout.post('/register', (req, res) => {
     const form = new formidable.IncomingForm();
 
     form.parse(req, (err, feilds, files) => {
         if (err === null) {
-            console.log(feilds);
-            console.log(files);
-            let newFilename =
+            let oldpath = files.image.filepath;
+
+            let newImageName =
                 files.image.newFilename +
-                "." +
-                files.image.originalFilename.split(".")[1];
-            fs.rename(
-                files.image.filepath,
-                `./restarentimages/images/${newFilename}`,
-                (err) => {
-                    if (err !== null) {
-                        console.log(err);
-                        res.status(400).send({
-                            message: "Unable to Create food item",
-                            success: false,
-                        });
-                    } else {
-                        console.log(err);
-                    }
-                }
-            );
-            let foodData = feilds;
-            foodData.posterurl = newFilename;
-            // let useritem = req.body;
-            bcrypt.genSalt(10, (err, salt) => {
+                '.' +
+                files.image.originalFilename.split('.')[1];
+
+            let newpath = __dirname + '/restarentimages/images/' + newImageName;
+
+            fs.readFile(oldpath, (err, data) => {
                 if (err === null) {
-                    bcrypt.hash(foodData.password, salt, (err, newpass) => {
+                    fs.writeFile(newpath, data, (err) => {
                         if (err === null) {
-                            foodData.password = newpass;
-                            let userobj = new usermodal(foodData);
-                            userobj
-                                .save()
-                                .then(() => {
-                                    res.send({
-                                        message: "successfully registred",
-                                        success: true,
+                            console.log('File stored');
+                            fs.unlink(oldpath, (err) => {
+                                if (err === null) {
+                                    let foodData = feilds;
+                                    foodData.posterurl = newImageName;
+
+                                    bcrypt.genSalt(10, (err, salt) => {
+                                        if (err === null) {
+                                            bcrypt.hash(
+                                                foodData.password,
+                                                salt,
+                                                (err, newpass) => {
+                                                    if (err === null) {
+                                                        foodData.password =
+                                                            newpass;
+                                                        let userobj =
+                                                            new usermodal(
+                                                                foodData,
+                                                            );
+                                                        userobj
+                                                            .save()
+                                                            .then(() => {
+                                                                res.send({
+                                                                    message:
+                                                                        'successfully registred',
+                                                                    success: true,
+                                                                });
+                                                            })
+                                                            .catch((err) =>
+                                                                console.log(
+                                                                    err,
+                                                                ),
+                                                            );
+                                                    } else {
+                                                        res.send({
+                                                            message:
+                                                                'something wrong in registration',
+                                                        });
+                                                    }
+                                                },
+                                            );
+                                        }
                                     });
-                                })
-                                .catch((err) => console.log(err));
+                                } else {
+                                    console.log(err);
+                                    res.status(400).send({
+                                        message: 'unable to create file',
+                                    });
+                                }
+                            });
                         } else {
-                            res.send({
-                                message: "something wrong in registration",
+                            console.log(err);
+                            res.status(400).send({
+                                message: 'unable to create file',
                             });
                         }
                     });
+                } else {
+                    console.log(err);
+                    res.status(400).send({ message: 'unable to create file' });
                 }
             });
         } else {
             console.log(err);
             res.status(500).send({
-                message: "Unable to Create Food Item",
+                message: 'Unable to Create Food Item',
                 success: false,
             });
         }
     });
 });
+
 // geting restaurant poster image
-rout.get("/resImage/:filename", (req, res) => {
+rout.get('/resImage/:filename', (req, res) => {
     res.download(`./restarentimages/images/${req.params.filename}`);
 });
 
 //
 // restaurant login
-rout.post("/login", async (req, res) => {
+rout.post('/login', async (req, res) => {
     let userCred = req.body;
     console.log(userCred);
 
@@ -86,20 +116,20 @@ rout.post("/login", async (req, res) => {
 
     if (user == null) {
         res.status(403).send({
-            massage: "Unable to find user",
+            massage: 'Unable to find user',
             success: false,
         });
     } else {
         const passwordStatus = await bcrypt.compare(
             userCred.password,
-            user.password
+            user.password,
         );
 
         if (passwordStatus) {
-            const token = await jwt.sign(userCred, "reskey");
+            const token = await jwt.sign(userCred, 'reskey');
 
             res.send({
-                message: "welcome user",
+                message: 'welcome user',
                 token: token,
                 _id: user._id,
                 role: user.role,
@@ -107,14 +137,14 @@ rout.post("/login", async (req, res) => {
             });
         } else if (!passwordStatus) {
             res.status(401).send({
-                message: "incorrect password",
+                message: 'incorrect password',
                 success: false,
             });
         }
     }
 });
 // get all restaurant
-rout.get("/allresturent", (req, res) => {
+rout.get('/allresturent', (req, res) => {
     usermodal
         .find()
         .then((data) => {
@@ -124,7 +154,7 @@ rout.get("/allresturent", (req, res) => {
         .catch((err) => console.log(err));
 });
 // get single restaurant throw  id
-rout.get("/allresturent/:id", (req, res) => {
+rout.get('/allresturent/:id', (req, res) => {
     let id = req.params.id;
     console.log(id);
     usermodal
@@ -138,7 +168,7 @@ rout.get("/allresturent/:id", (req, res) => {
                 if (data._id == id) {
                     allitems.push(data);
                 } else {
-                    console.log("err");
+                    console.log('err');
                 }
             });
             res.send(allitems);
@@ -148,7 +178,7 @@ rout.get("/allresturent/:id", (req, res) => {
         });
 });
 // get particular restaurant item
-rout.get("/items/:id", (req, res) => {
+rout.get('/items/:id', (req, res) => {
     let id = req.params.id;
     console.log(id);
 
@@ -164,7 +194,7 @@ rout.get("/items/:id", (req, res) => {
                 if (data.restaurant == id) {
                     allitems.push(data);
                 } else {
-                    console.log("err");
+                    console.log('err');
                 }
             });
             console.log(allitems);
@@ -176,60 +206,81 @@ rout.get("/items/:id", (req, res) => {
 });
 
 // update items
-
-rout.put("/items/:id", verifytoken, restaurant, (req, res) => {
+// TODO: fileupload
+rout.put('/items/:id', verifytoken, restaurant, (req, res) => {
     const form = new formidable.IncomingForm();
 
     form.parse(req, (err, feilds, files) => {
         if (err === null) {
             if (files.image != undefined) {
-                let newFilename =
+                let oldpath = files.image.filepath;
+
+                let newImageName =
                     files.image.newFilename +
-                    "." +
-                    files.image.originalFilename.split(".")[1];
-                fs.rename(
-                    files.image.filepath,
-                    `./images/food/${newFilename}`,
-                    (err) => {
-                        if (err !== null) {
-                            console.log(err);
-                            res.status(400).send({
-                                message: "Unable to Create food item",
-                                success: false,
-                            });
-                        } else {
-                            console.log(err);
-                        }
-                    }
-                );
+                    '.' +
+                    files.image.originalFilename.split('.')[1];
 
-                let data = feilds;
-                let id = req.params.id;
+                let newpath = __dirname + '/images/food/' + newImageName;
+                console.log(newpath);
 
-                data.posterurl = newFilename;
-                // let useritem = req.body;
-                itemmodal
-                    .updateOne(
-                        { _id: id },
+                fs.readFile(oldpath, (err, data) => {
+                    if (err === null) {
+                        fs.writeFile(newpath, data, (err) => {
+                            if (err === null) {
+                                fs.unlink(oldpath, (err) => {
+                                    if (err === null) {
+                                        let data = feilds;
+                                        let id = req.params.id;
 
-                        data
-                    )
-                    .then(
-                        () =>
-                            fs.unlink(oldFilePath, (err) => {
+                                        data.posterurl = newImageName;
+                                        // let useritem = req.body;
+                                        itemmodal
+                                            .updateOne(
+                                                { _id: id },
+
+                                                data,
+                                            )
+                                            .then(
+                                                () =>
+                                                    fs.unlink(
+                                                        oldFilePath,
+                                                        (err) => {
+                                                            console.log(err);
+                                                        },
+                                                    ),
+                                                res.status(200).send({
+                                                    message:
+                                                        'image updated !!!',
+                                                    success: true,
+                                                }),
+                                            )
+
+                                            .catch((err) => res.send(err));
+                                    } else {
+                                        console.log(err);
+                                        res.status(400).send({
+                                            message: 'unable to create file',
+                                        });
+                                    }
+                                });
+                            } else {
                                 console.log(err);
-                            }),
-                        res.status(200).send({
-                            message: "image updated !!!",
-                            success: true,
-                        })
-                    )
-
-                    .catch((err) => res.send(err));
+                                res.status(400).send({
+                                    message: 'unable to create file',
+                                });
+                            }
+                        });
+                    } else {
+                        console.log(err);
+                        res.status(400).send({
+                            message: 'unable to create file',
+                        });
+                    }
+                });
             } else {
                 let data = feilds;
 
-                console.log("nani");
+                console.log('nani');
                 let id = req.params.id;
                 console.log(id);
                 console.log(data);
@@ -237,20 +288,20 @@ rout.put("/items/:id", verifytoken, restaurant, (req, res) => {
                     .updateOne(
                         { _id: id },
 
-                        data
+                        data,
                     )
                     .then(() =>
                         res.status(200).send({
-                            message: "Item updated !!!",
+                            message: 'Item updated !!!',
                             success: true,
-                        })
+                        }),
                     )
                     .catch((err) => res.send(err));
             }
         } else {
             console.log(err);
             res.status(500).send({
-                message: "Unable to Create Food Item",
+                message: 'Unable to Create Food Item',
                 success: false,
             });
         }
@@ -258,89 +309,104 @@ rout.put("/items/:id", verifytoken, restaurant, (req, res) => {
 });
 
 // delete items
-rout.delete("/items/:id", verifytoken, restaurant, (req, res) => {
+rout.delete('/items/:id', verifytoken, restaurant, (req, res) => {
     let id = req.params.id;
     console.log(id);
     itemmodal
         .deleteOne({ _id: id })
         .then(() =>
             res.status(200).send({
-                message: "Item deleted !!!",
+                message: 'Item deleted !!!',
                 success: true,
-            })
+            }),
         )
         .catch((err) => {
             console.log(err);
-            res.send("some problem in updateing");
+            res.send('some problem in updateing');
         });
 });
 // get singe order
-rout.get("/orders/:id", verifytoken, restaurant, (req, res) => {
+rout.get('/orders/:id', verifytoken, restaurant, (req, res) => {
     let restaurantid = req.params.id;
 
     const orders = orderModel
         .find({ restaurant: restaurantid })
-        .populate("customer")
-        .populate("foodItem")
-        .populate("restaurant")
+        .populate('customer')
+        .populate('foodItem')
+        .populate('restaurant')
         .then((data) => console.log(data))
         .catch((err) => console.log(err));
 
     res.status(200).send(orders);
 });
-rout.post("/createItem", verifytoken, restaurant, (req, res) => {
-    console.log("working!");
-    // console.log(req.body);
+
+// TODO: fileupload
+rout.post('/createItem', verifytoken, restaurant, (req, res) => {
+    console.log('working!');
 
     const form = new formidable.IncomingForm();
 
     form.parse(req, (err, feilds, files) => {
         if (err === null) {
-            console.log(feilds);
-            console.log(files);
-            let newFilename =
+            let oldpath = files.image.filepath;
+
+            let newImageName =
                 files.image.newFilename +
-                "." +
-                files.image.originalFilename.split(".")[1];
-            fs.rename(
-                files.image.filepath,
-                `./images/food/${newFilename}`,
-                (err) => {
-                    if (err !== null) {
-                        console.log(err);
-                        res.status(400).send({
-                            message: "Unable to Create food item",
-                            success: false,
-                        });
-                    } else {
-                        console.log(err);
-                    }
+                '.' +
+                files.image.originalFilename.split('.')[1];
+
+            let newpath = __dirname + '/images/food/' + newImageName;
+            console.log(newpath);
+
+            fs.readFile(oldpath, (err, data) => {
+                if (err === null) {
+                    fs.writeFile(newpath, data, (err) => {
+                        if (err === null) {
+                            console.log('File stored');
+                            fs.unlink(oldpath, (err) => {
+                                if (err === null) {
+                                    let foodData = feilds;
+                                    foodData.posterurl = newImageName;
+                                    let itemobj = new itemmodal(foodData);
+                                    itemobj
+                                        .save()
+                                        .then(() =>
+                                            res.status(200).send({
+                                                message: 'Item created !!!',
+                                                success: true,
+                                            }),
+                                        )
+                                        .catch((err) => console.log(err));
+                                } else {
+                                    console.log(err);
+                                    res.status(400).send({
+                                        message: 'unable to create file',
+                                    });
+                                }
+                            });
+                        } else {
+                            console.log(err);
+                            res.status(400).send({
+                                message: 'unable to create file',
+                            });
+                        }
+                    });
+                } else {
+                    console.log(err);
+                    res.status(400).send({ message: 'unable to create file' });
                 }
-            );
-            let foodData = feilds;
-            foodData.posterurl = newFilename;
-            // let useritem = req.body;
-            let itemobj = new itemmodal(foodData);
-            itemobj
-                .save()
-                .then(() =>
-                    res.status(200).send({
-                        message: "Item created !!!",
-                        success: true,
-                    })
-                )
-                .catch((err) => console.log(err));
+            });
         } else {
             console.log(err);
             res.status(500).send({
-                message: "Unable to Create Food Item",
+                message: 'Unable to Create Food Item',
                 success: false,
             });
         }
     });
 });
 
-rout.get("/foodImage/:filename", (req, res) => {
+rout.get('/foodImage/:filename', (req, res) => {
     res.download(`./images/food/${req.params.filename}`);
 });
 
